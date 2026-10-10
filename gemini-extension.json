@@ -1,0 +1,6 @@
+{
+  "name": "app-cracker",
+  "version": "0.1.0",
+  "description": "Operator-driven Android app reverse-engineering skill (static, dynamic, synthesis).",
+  "contextFileName": "GEMINI.md"
+}
