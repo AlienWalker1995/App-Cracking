@@ -1,0 +1,65 @@
+# Android emulator as a container service (rooted, KVM-accelerated) for app-cracking.
+#
+# This is the reliable Tier-1 target: a ROOTED emulator you control can run instrumentation
+# that a non-rooted physical device blocks. It runs an arm64 title via the emulator's arm64
+# translation, and root lets you push frida-server, read /data/data, and carve Lua from RAM.
+# Use only on apps you have the right to analyze.
+#
+# Prereq: /dev/kvm must exist in the WSL2 backend. The kvm-loader below creates it by
+# loading the kvm module (the WSL2 kernel ships it as a module; nested virt is already on
+# for this AMD host). No custom kernel, no restart.
+#
+# Bring up:  docker compose -f services/android-emulator/docker-compose.yml up -d
+# adb:       adb connect localhost:5555   (then `adb root`)
+# web view:  http://localhost:6080
+#
+# To fold into the Ordo stack, port these two services into ordo.yaml (the kvm-loader as a
+# one-shot init the emulator depends_on). Keep it on its own profile so it only runs for
+# cracking jobs, not every stack up.
+
+services:
+  # One-shot: load the kvm module into the shared WSL2 kernel so /dev/kvm exists.
+  kvm-loader:
+    image: alpine:3.20
+    privileged: true
+    volumes:
+      - /lib/modules:/lib/modules:ro
+    command: sh -c "apk add -q kmod && (modprobe kvm_amd || modprobe kvm_intel) && ls -l /dev/kvm && echo kvm-ready"
+    restart: "no"
+
+  android-emulator:
+    image: budtmo/docker-android:emulator_14.0
+    privileged: true
+    devices:
+      - /dev/kvm
+      - /dev/dxg          # WSL GPU device (for GPU-accelerated GL via Mesa d3d12)
+    # GPU: pin the emulator's GL to the SECONDARY GPU (GTX 1070) so the primary (5090)
+    # stays free for the LLM. The NVIDIA runtime here provides CUDA only; GL goes through
+    # the WSL d3d12 path (Mesa d3d12 driver + libd3d12 from /usr/lib/wsl), confirmed to
+    # render as "D3D12 (NVIDIA GeForce GTX 1070)".
+    gpus:
+      - driver: nvidia
+        device_ids: ["GPU-20fac13a-5e5b-1818-581f-63901612fd84"]   # GTX 1070 UUID
+        capabilities: [gpu]
+    volumes:
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+    depends_on:
+      kvm-loader:
+        condition: service_completed_successfully
+    environment:
+      EMULATOR_DEVICE: "Samsung Galaxy S10"
+      WEB_VNC: "true"
+      NVIDIA_VISIBLE_DEVICES: "GPU-20fac13a-5e5b-1818-581f-63901612fd84"
+      NVIDIA_DRIVER_CAPABILITIES: "all"
+      LD_LIBRARY_PATH: "/usr/lib/wsl/lib"
+      MESA_LOADER_DRIVER_OVERRIDE: "d3d12"    # force GPU GL, not llvmpipe software
+      GALLIUM_DRIVER: "d3d12"
+      MESA_D3D12_DEFAULT_ADAPTER_NAME: "1070" # pin to the 1070, not the 5090
+      EMULATOR_ADDITIONAL_ARGS: "-memory 6144 -cores 4 -gpu host -no-snapshot -no-boot-anim"
+    ports:
+      - "5555:5555"   # adb
+      - "6080:6080"   # noVNC web view
+    # NOTE: GPU rendering (1070) is confirmed working, but a heavy arm64-only Unity/IL2CPP
+    # title still crashes qemu during engine init because of the ARM64->x86 translation of
+    # its large native libs (not a GPU issue). Such titles need a native-arm64 target
+    # (rooted arm64 phone, or Corellium). Lighter / x86-native apps run fine here.

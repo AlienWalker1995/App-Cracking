@@ -1,0 +1,28 @@
+# Output bundles and anything target-specific never belong in this repository.
+out/
+targets/
+_input/
+_digest/
+
+# Acquired or extracted artifacts
+*.apk
+*.xapk
+*.aab
+*.luac
+*.luac.enc
+*.sqlite3
+*.db
+device_pull*/
+extracted_*/
+logs/
+
+# Secrets / env
+.env
+*.pem
+*.keystore
+*.jks
+
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
