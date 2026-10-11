@@ -26,6 +26,17 @@ It is **engine-agnostic** and **package-parameterized**. The same pipeline runs 
 
 > This is a private research workspace for competitive product analysis and security research. It analyzes apps; it does not produce or distribute modified apps.
 
+## Install as a skill (any harness)
+
+```sh
+git clone https://github.com/AlienWalker1995/App-Cracking
+cd App-Cracking
+./install.sh all            # or: claude | codex | cursor | gemini | hermes
+./install.sh all --dry-run  # preview
+```
+
+The installer drives every supported harness from the single canonical `skills/app-cracker/SKILL.md`: Claude Code / Agent Skills, Codex / AGENTS.md, Cursor, and Gemini CLI, plus Hermes.
+
 ## Quick start
 
 Static pass, no device required:
@@ -44,7 +55,7 @@ docker run --rm -v "$PWD/in:/in:ro" -v "$PWD/out:/out" \
   app-cracker-worker:0.1.0 extract /in/app.apk --out /out
 ```
 
-Operator-driven, through the Hermes agent in Discord: attach an APK (or give a package name), ask it to analyze the app, and it runs the pipeline to completion and returns a report plus the full bundle. See [`hermes-skill/app-cracker/SKILL.md`](hermes-skill/app-cracker/SKILL.md).
+Operator-driven, through the Hermes agent in Discord: attach an APK (or give a package name), ask it to analyze the app, and it runs the pipeline to completion and returns a report plus the full bundle. See [`skills/app-cracker/SKILL.md`](skills/app-cracker/SKILL.md).
 
 ## How it works
 
@@ -125,7 +136,7 @@ Two recurring findings drive the design:
 | [`pipeline/README.md`](pipeline/README.md) | Tier 0 static extraction stages and entry point |
 | [`worker/README.md`](worker/README.md) | The pinned RE toolchain and how it is driven per job |
 | [`services/android-emulator/README.md`](services/android-emulator/README.md) | Rooted KVM emulator as a Tier-1 target |
-| [`hermes-skill/app-cracker/SKILL.md`](hermes-skill/app-cracker/SKILL.md) | Operator-driven agent service contract |
+| [`skills/app-cracker/SKILL.md`](skills/app-cracker/SKILL.md) | Operator-driven agent service contract |
 | [`DISCLAIMER.md`](DISCLAIMER.md) | Intended use and limits |
 
 ### Repo layout
@@ -134,6 +145,10 @@ Two recurring findings drive the design:
 pipeline/            engine-agnostic static extraction (Tier 0) + dynamic stages (Tier 1)
 worker/              pinned Docker toolchain driven per job
 services/            containerized services (rooted KVM emulator = Tier-1 target)
-hermes-skill/        the operator-driven app-cracker agent skill
+skills/              the canonical app-cracker skill (single source of truth)
+AGENTS.md            Codex / AGENTS.md-aware harness pointer
+GEMINI.md            Gemini CLI pointer
+.cursor/rules/       Cursor rule pointer
+install.sh           unified multi-harness installer
 docs/                architecture and assets
 ```
