@@ -4,7 +4,7 @@
 // exported (tolua, XLua, vanilla Lua, LuaJIT-compat, or a game's own .so). The
 // game decrypts/unpacks each chunk BEFORE calling these, so this captures the
 // plaintext bytecode even when Lua ships encrypted. Works for any Lua-scripted
-// game (merge, RPG, casino, ...), not one title.
+// game of any genre, not one title.
 //
 // Each captured chunk is streamed to the host runner (tier1_lua.py) via send()
 // with the raw bytes as the message payload. The runner dedups and decompiles.
@@ -16,7 +16,7 @@
 var LOADERS = [
   { sym: 'luaL_loadbufferx', buf: 1, size: 2, name: 3 }, // Lua 5.2+/tolua
   { sym: 'luaL_loadbuffer',  buf: 1, size: 2, name: 3 }, // Lua 5.1/tolua
-  { sym: 'xluaL_loadbuffer', buf: 1, size: 2, name: 3 }, // XLua (Gossip-Harbor family)
+  { sym: 'xluaL_loadbuffer', buf: 1, size: 2, name: 3 }, // XLua
   { sym: 'tolua_loadbuffer', buf: 1, size: 2, name: 3 }, // tolua# wrapper
   { sym: 'luaL_loadstring',  buf: 1, size: -1, name: -1 } // NUL-terminated source
 ];

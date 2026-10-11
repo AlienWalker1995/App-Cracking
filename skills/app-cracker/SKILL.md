@@ -68,10 +68,10 @@ prior run produced the bundle but skipped the report - the blocking call timed o
    and `manifest.json`. On the host today the same stages run with Python + UnityPy directly.
 
 3. **Tier 1 - dynamic runtime crack (explicit + device only).** For any Lua-scripted game the
-   economy (merge chains, drop tables, costs, timers) is Lua that loads only at runtime, so it
-   is captured from the LIVE PROCESS, not from static files. The flow is device-adaptive and
-   pulls all logic from RAM; it works for any game format (tolua / XLua / vanilla Lua, and the
-   memory sweep captures config/economy even for non-Lua targets):
+   economy (item and progression definitions, reward/drop tables, costs, timers) is Lua that
+   loads only at runtime, so it is captured from the LIVE PROCESS, not from static files. The
+   flow is device-adaptive and pulls all logic from RAM; it works for any game format (tolua /
+   XLua / vanilla Lua, and the memory sweep captures config/economy even for non-Lua targets):
    - Verify a device (`adb devices`, via `worker/adb-bridge.sh` +
      `ADB_SERVER_SOCKET=tcp:host.docker.internal:5037`). `tier1` auto-detects root.
    - **Rooted device (reliable):** it pushes frida-server and attaches directly - no repack.
@@ -88,11 +88,11 @@ prior run produced the bundle but skipped the report - the blocking call timed o
      captured chunk with unluac into `<outdir>/dynamic/{lua/decompiled, mem/*}`.
    - Also available: mitmproxy on the game's API/CDN for the server-authoritative economy;
      repack-debuggable + `run-as` for on-disk private files; live DB pull + decrypt.
-   - Then extract merge/item chains and drop tables from the decompiled Lua and fold them into
-     the synthesis report (GH-style, like `docs/ItemProducerDropTable.csv`).
+   - Then extract the economy tables (item and progression definitions, reward/drop tables,
+     costs, timers) from the decompiled Lua and fold them into the synthesis report.
 
 4. **Tier 2 - synthesis.** Read the decompiled code, configs, IL2CPP strings, and any live
-   state, and write `REPORT.md`: architecture, economy/drop tables, config surfaces,
+   state, and write `REPORT.md`: architecture, economy and reward tables, config surfaces,
    endpoints, and a plain-language "how it works."
 
 5. **Return.** Post the report summary + the bundle path to Discord. Large artifacts stay
@@ -125,7 +125,7 @@ template: reason over the extracted material and explain the systems.
    proves and what still needs Tier 1 (runtime Lua/memory capture). Do not just list counts -
    explain the systems and cite the files/classes you drew from.
    - Large files: `dump.cs` can be 20MB+. Do NOT read it whole. `grep` it for game namespaces
-     and class names (e.g. economy/manager/config/order classes) and read only those spans.
+     and class names (e.g. economy/manager/config classes) and read only those spans.
      Sample the config JSON; most are localization, so filter for real config.
 3. **Reported back.** You have posted the `REPORT.md` summary and the bundle path to the
    requester.
