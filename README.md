@@ -2,6 +2,9 @@
 
 # App-Cracker
 
+[![CI](https://github.com/AlienWalker1995/App-Cracking/actions/workflows/ci.yml/badge.svg)](https://github.com/AlienWalker1995/App-Cracking/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 ### Reverse-engineer any Android app, end to end, with one pipeline.
 
 **See a feature or an economy you want to understand. Pull it apart down to the bytecode, the live DB, and the runtime memory, with the evidence behind every claim.**
