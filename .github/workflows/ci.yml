@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck if missing
+        run: |
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck
+          fi
+          shellcheck --version | head -1
+
+      - name: shellcheck
+        run: |
+          set -euo pipefail
+          files=()
+          for f in install.sh worker/adb-bridge.sh; do
+            if [ -f "$f" ]; then
+              files+=("$f")
+            else
+              echo "skip (absent): $f"
+            fi
+          done
+          shopt -s nullglob
+          for f in pipeline/stages/*.sh; do
+            files+=("$f")
+          done
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No shell files present; skipping shellcheck."
+            exit 0
+          fi
+          echo "Checking: ${files[*]}"
+          shellcheck -S warning "${files[@]}"
+          echo "shellcheck OK"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ruff
+        run: pip install ruff==0.11.12
+
+      - name: ruff check
+        run: ruff check pipeline
+
+      - name: py_compile
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          files=(pipeline/**/*.py)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No python files present; skipping py_compile."
+            exit 0
+          fi
+          echo "Compiling: ${files[*]}"
+          python -m py_compile "${files[@]}"
+          echo "py_compile OK"
+
+      - name: validate-assets
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+
+          def check(cond, msg):
+              if not cond:
+                  print("FAIL:", msg)
+                  sys.exit(1)
+              print("OK:", msg)
+
+          # gemini-extension.json must be valid JSON when present.
+          if os.path.exists("gemini-extension.json"):
+              with open("gemini-extension.json") as f:
+                  json.load(f)
+              print("OK: gemini-extension.json is valid JSON")
+          else:
+              print("skip (absent): gemini-extension.json")
+
+          # skills/app-cracker/SKILL.md must open with a YAML frontmatter block
+          # that declares name: and description: when present.
+          skill = "skills/app-cracker/SKILL.md"
+          if os.path.exists(skill):
+              text = open(skill).read()
+              m = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
+              check(m is not None, "SKILL.md opens with a YAML frontmatter block")
+              if m:
+                  fm = m.group(1)
+                  check(re.search(r"^name:", fm, re.MULTILINE) is not None,
+                        "SKILL.md frontmatter declares name:")
+                  check(re.search(r"^description:", fm, re.MULTILINE) is not None,
+                        "SKILL.md frontmatter declares description:")
+          else:
+              print("skip (absent): " + skill)
+
+          # .cursor/rules/app-cracker.mdc must open with a frontmatter fence when present.
+          mdc = ".cursor/rules/app-cracker.mdc"
+          if os.path.exists(mdc):
+              text = open(mdc).read()
+              check(text.startswith("---"), ".cursor/rules/app-cracker.mdc opens with ---")
+          else:
+              print("skip (absent): " + mdc)
+
+          print("validate-assets: all present assets valid")
+          PY
